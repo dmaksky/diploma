@@ -20,12 +20,10 @@ resource "random_id" "suffix" {
 }
 
 resource "yandex_storage_bucket" "tfstate" {
-  bucket    = "tfstate-${var.env}-${random_id.suffix.hex}"
-  folder_id = var.folder_id
-  acl       = "private"
-  max_size  = 1073741824
-
-  force_destroy = var.force_destroy
+  bucket      = "tfstate-${var.env}-${random_id.suffix.hex}"
+  folder_id   = var.folder_id
+  acl         = "private"
+  max_size    = 1073741824
 
   versioning {
     enabled = var.bucket_versioning

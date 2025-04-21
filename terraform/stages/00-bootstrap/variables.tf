@@ -28,9 +28,3 @@ variable "bucket_versioning" {
   type        = bool
   default     = true
 }
-
-variable "force_destroy" {
-  description = "Разрешить удаление бакета вместе с объектами"
-  type        = bool
-  default     = false
-}

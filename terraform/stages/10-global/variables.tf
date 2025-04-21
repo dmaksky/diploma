@@ -9,7 +9,6 @@ variable "env" {
 
 variable "folder_id"       { type = string }
 variable "cloud_id"        { type = string }
-variable "organization_id" { type = string }
 
 variable "zone" {
   validation {

@@ -1,18 +1,10 @@
-resource "yandex_kms_symmetric_key" "cmk" {
-  name              = "cmk-${var.env}"
-  description       = "Ключ шифрования для логов, бэкапов и дисков"
-  default_algorithm = "AES_256"
-  rotation_period   = "8760h"
-  labels = {
-    env = "${var.env}"
-  }
-}
-
 resource "yandex_container_registry" "cr" {
   name        = "cr-${var.env}"
   folder_id   = var.folder_id
   labels = {
-    env = "${var.env}"
+    env     = var.env
+    project = local.project
+    stage   = local.stage
   }
 }
 
@@ -22,7 +14,9 @@ resource "yandex_logging_group" "logs" {
   folder_id             = var.folder_id
   description           = "Группа логгирования"
   labels = {
-    env = "${var.env}"
+    env     = var.env
+    project = local.project
+    stage   = local.stage
   }
 }
 
@@ -30,9 +24,6 @@ resource "yandex_audit_trails_trail" "basic_trail" {
   name        = "basic-trail-${var.env}"
   folder_id   = var.folder_id
   description = "Базовый трейл"
-  labels = {
-    env = "${var.env}" 
-  }
 
   service_account_id = data.terraform_remote_state.bootstrap.outputs.sa_id
 
@@ -64,6 +55,11 @@ resource "yandex_audit_trails_trail" "basic_trail" {
         resource_type = "resource-manager.folder"
       }
     }
+  }
 
+  labels = {
+    env     = var.env
+    project = local.project
+    stage   = local.stage
   }
 }

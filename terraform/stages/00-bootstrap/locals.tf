@@ -1,4 +1,10 @@
 locals {
-  project = "pg-gitops"
-  stage   = "bootstrap"
+  kms_key_name         = "${local.prefix}-tfstate-key"
+  service_account_name = "${local.prefix}-terraform-sa"
+  bucket_name          = "${local.prefix}-tfstate-bucket"
+  labels               = {
+    project     = var.project_name
+    stage       = "00-bootstrap"
+    environment = terraform.workspace
+  }
 }

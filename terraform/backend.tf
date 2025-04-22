@@ -4,7 +4,6 @@ terraform {
       s3 = "https://storage.yandexcloud.net"
     }
 
-    key                         = "10-global/terraform.tfstate"
     region                      = "ru-central1"
 
     skip_region_validation      = true

@@ -1,7 +1,7 @@
+# Teerraform
 key.json
 .terraform/
-terraform.tfstate
-terraform.tfstate.*
+*.tfstate
 *.tfstate.backup
 dev.tfvars
 stage.tfvars

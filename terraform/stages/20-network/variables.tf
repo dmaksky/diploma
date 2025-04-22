@@ -33,9 +33,9 @@ variable "subnets" {
     cidr  = string
   }))
   default = {
-    public-a = { name = "public-a", zone = "ru-central1-a", cidr = "10.10.0.0/24" }
-    public-b = { name = "public-b", zone = "ru-central1-b", cidr = "10.10.1.0/24" }
-    public-d = { name = "public-d", zone = "ru-central1-d", cidr = "10.10.2.0/24" }
+    private-a = { name = "private-a", zone = "ru-central1-a", cidr = "10.10.0.0/24" }
+    private-b = { name = "private-b", zone = "ru-central1-b", cidr = "10.10.1.0/24" }
+    private-d = { name = "private-d", zone = "ru-central1-d", cidr = "10.10.2.0/24" }
   }
 }
 

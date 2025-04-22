@@ -19,4 +19,4 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-key_dev.json
+key*.json

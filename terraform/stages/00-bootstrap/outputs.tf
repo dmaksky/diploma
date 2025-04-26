@@ -3,9 +3,14 @@ output "kms_key_id" {
   value       = module.kms.id
 }
 
-output "service_account_id" {
+output "terraform_sa_id" {
   description = "ID сервисного аккаунта Terraform"
-  value       = module.terraform_sa.sa_id
+  value       = module.terraform_sa.id
+}
+
+output "ansible_sa_id" {
+  description = "ID сервисного аккаунта Ansible"
+  value       = module.ansible_sa.id
 }
 
 output "sa_access_key" {

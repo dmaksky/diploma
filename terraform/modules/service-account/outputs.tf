@@ -1,4 +1,4 @@
-output "sa_id" {
+output "id" {
   value       = yandex_iam_service_account.this.id
   description = "ID сервисного аккаунта"
 }

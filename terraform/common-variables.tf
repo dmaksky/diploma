@@ -13,6 +13,11 @@ variable "folder_id" {
   type        = string
 }
 
+variable "organization_id" {
+  type        = string
+  description = "ID организации" 
+}
+
 variable "yc_token" {
   description = "IAM‑токен"
   type        = string

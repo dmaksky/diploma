@@ -1,9 +1,17 @@
 module "terraform_sa" {
   source       = "../../modules/service-account"
-  name         = local.service_account_name
+  name         = local.terraform_sa_name
   description  = "Service account for Terraform"
   folder_id    = var.folder_id
-  folder_role  = "editor"
+  folder_role  = "admin"
+}
+
+module "ansible_sa" {
+  source       = "../../modules/service-account"
+  name         = local.ansible_sa_name
+  description  = "Service account for Ansbile"
+  folder_id    = var.folder_id
+  folder_role  = "compute.osLogin"
 }
 
 module "kms" {
@@ -21,4 +29,9 @@ module "tfstate_bucket" {
   versioning_enabled    = true
   default_storage_class = "STANDARD"
   labels                = local.labels
+}
+
+module "oslogin" {
+  source          = "../../modules/oslogin"
+  organization_id = var.organization_id
 }

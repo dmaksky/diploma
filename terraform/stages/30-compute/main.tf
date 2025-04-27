@@ -81,12 +81,13 @@ module "bastion" {
   network_interfaces  = [
     {
       subnet_id          = local.private_subnet_ids[var.zone]
-      security_group_ids = [local.security_group_ids["bastion"]]
+      security_group_ids = [local.security_group_ids["private_bastion"]]
+      ipv4_address       = cidrhost(var.subnets[var.zone].private_cidr, 254)
       nat                = false
     },
     {
       subnet_id          = local.public_subnet_ids[var.zone]
-      security_group_ids = [local.security_group_ids["bastion"]]
+      security_group_ids = [local.security_group_ids["public_bustion"]]
       nat                = true
     }
   ]

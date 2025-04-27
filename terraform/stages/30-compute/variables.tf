@@ -41,3 +41,11 @@ variable "worker_max" { default = 9 }
 
 variable "worker_cpu_utilization" { default = 60 }
 variable "worker_memory_target"   { default = null }
+
+variable "subnets" {
+  description = "Публичные и приватные подсети в каждой из зон"
+  type        = map(object({
+    private_cidr = string
+    public_cidr  = string
+  }))
+}

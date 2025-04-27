@@ -18,9 +18,17 @@ resource "yandex_vpc_security_group" "this" {
     }
   }
 
-  egress {
-    description    = "Permit ANY"
-    protocol       = "ANY"
-    v4_cidr_blocks = ["0.0.0.0/0"]
+  dynamic "egress" {
+    for_each = var.egress_rules
+    content {
+      protocol          = egress.value.protocol
+      description       = egress.value.description
+      from_port         = try(egress.value.from_port, null)
+      to_port           = try(egress.value.to_port, null)
+      port              = try(egress.value.port, null)
+      v4_cidr_blocks    = try(egress.value.v4_cidr_blocks, null)
+      security_group_id = try(egress.value.security_group_id, null)
+      predefined_target = try(egress.value.predefined_target, null)
+    }
   }
 }

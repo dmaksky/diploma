@@ -1,0 +1,44 @@
+- name: Install Kubernetes APT key (Debian/Ubuntu)
+  apt_key:
+    url: https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/Release.key
+    state: present
+    keyring: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  when: ansible_os_family == 'Debian'
+
+- name: Add Kubernetes APT repository (Debian/Ubuntu)
+  apt_repository:
+    repo: deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/ /
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Install Kubernetes packages (Debian/Ubuntu)
+  apt:
+    name:  kubectl
+    state: present
+    update_cache: yes
+  when: ansible_os_family == 'Debian'
+
+- name: Ensure ~/.kube directory exists
+  file:
+    path: "/home/{{ ansible_user }}/.kube"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0700'
+
+- name: Получить внутренние креденшалы для Kubernetes-кластера
+  become: false
+  environment:
+    YC_CONFIG_HOME: "/home/{{ ansible_user }}/.config/yandex-cloud"
+    KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
+  command: >
+    yc managed-kubernetes cluster get-credentials {{ cluster_name }} --internal
+  args:
+    chdir: "/home/{{ ansible_user }}"
+  register: yc_get_credentials
+  changed_when: >
+    yc_get_credentials.rc == 0 and
+    (yc_get_credentials.stdout is search("Saving credentials") or
+     yc_get_credentials.stdout is search("updated"))
+  failed_when: yc_get_credentials.rc != 0
+  no_log: false

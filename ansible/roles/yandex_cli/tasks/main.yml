@@ -1,0 +1,102 @@
+- name: Проверить, установлен ли yc
+  command: yc --version
+  register: yc_check
+  changed_when: false
+  failed_when: false
+
+- name: Установить jq (нужен для парсинга JSON от yc)
+  apt:
+    name: jq
+    state: present
+    update_cache: yes
+
+- name: Скачать и установить Yandex Cloud CLI
+  shell: |
+    curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh \
+      | bash -s -- -i /usr/local
+  args:
+    creates: /usr/local/bin/yc
+  become: yes
+  when: yc_check.rc != 0
+
+- name: Создать директорию для ключа сервис-аккаунта
+  file:
+    path: "/home/{{ ansible_user }}/.yandex-cloud"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0700"
+
+- name: Скопировать JSON-ключ сервис-аккаунта
+  template:
+    src: k8s-key.json.j2
+    dest: "/home/{{ ansible_user }}/.yandex-cloud/k8s-key.json"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+
+- name: Проверить, есть ли профиль 'ansible' в yc
+  shell: yc config profile list --format json
+  register: yc_profiles
+  changed_when: false
+  failed_when: false
+  environment:
+    YC_CONFIG_HOME: "/home/{{ ansible_user }}/.yandex-cloud"
+  become: false
+
+- name: Создать профиль 'ansible', если его нет
+  shell: yc config profile create ansible
+  args:
+    creates: "/home/{{ ansible_user }}/.yandex-cloud/profiles/ansible"
+  environment:
+    YC_CONFIG_HOME: "/home/{{ ansible_user }}/.yandex-cloud"
+  become: false
+  when: "'ansible ACTIVE' not in yc_profiles.stdout"
+
+- name: Проверить текущий service-account-key в профиле 'ansible'
+  shell: yc config get service-account-key --profile ansible
+  register: current_key
+  changed_when: false
+  failed_when: false
+  environment:
+    YC_CONFIG_HOME: "/home/{{ ansible_user }}/.yandex-cloud"
+  become: false
+
+- name: Установить service-account-key, если он отличается
+  shell: yc config set service-account-key /home/{{ ansible_user }}/.yandex-cloud/k8s-key.json --profile ansible
+  when: current_key.stdout != "/home/{{ ansible_user }}/.yandex-cloud/k8s-key.json"
+  environment:
+    YC_CONFIG_HOME: "/home/{{ ansible_user }}/.yandex-cloud"
+  become: false
+
+- name: Проверить текущий cloud-id в профиле 'ansible'
+  shell: yc config get cloud-id --profile ansible
+  register: current_cloud
+  changed_when: false
+  failed_when: false
+  environment:
+    YC_CONFIG_HOME: "/home/{{ ansible_user }}/.yandex-cloud"
+  become: false
+
+- name: Установить cloud-id, если он отличается
+  shell: yc config set cloud-id {{ yc_cloud_id }} --profile ansible
+  when: current_cloud.stdout != "{{ yc_cloud_id }}"
+  environment:
+    YC_CONFIG_HOME: "/home/{{ ansible_user }}/.yandex-cloud"
+  become: false
+
+- name: Проверить текущий folder-id в профиле 'ansible'
+  shell: yc config get folder-id --profile ansible
+  register: current_folder
+  changed_when: false
+  failed_when: false
+  environment:
+    YC_CONFIG_HOME: "/home/{{ ansible_user }}/.yandex-cloud"
+  become: false
+
+- name: Установить folder-id, если он отличается
+  shell: yc config set folder-id {{ yc_folder_id }} --profile ansible
+  when: current_folder.stdout != "{{ yc_folder_id }}"
+  environment:
+    YC_CONFIG_HOME: "/home/{{ ansible_user }}/.yandex-cloud"
+  become: false

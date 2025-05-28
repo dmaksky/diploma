@@ -1,0 +1,28 @@
+- name: Check if helm already present
+  command: "{{ helm_bin_path }} version --template '{{ '{{' }} .Version {{ '}}' }}'"
+  register: helm_ver
+  failed_when: false
+  changed_when: false
+
+- name: Download and install Helm {{ helm_version }}
+  when: helm_ver.rc != 0 or (helm_ver.stdout is not search(helm_version))
+  block:
+    - name: Download helm archive
+      get_url:
+        url: "https://get.helm.sh/helm-{{ helm_version }}-{{ helm_arch }}.tar.gz"
+        dest: "/tmp/helm-{{ helm_version }}.tar.gz"
+        mode: '0644'
+
+    - name: Extract helm
+      unarchive:
+        src: "/tmp/helm-{{ helm_version }}.tar.gz"
+        dest: /tmp
+        remote_src: yes
+      register: unarc
+
+    - name: Move helm binary
+      copy:
+        src: "/tmp/{{ helm_arch }}/helm"
+        dest: "{{ helm_bin_path }}"
+        remote_src: yes
+        mode: '0755'

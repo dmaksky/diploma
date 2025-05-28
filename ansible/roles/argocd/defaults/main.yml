@@ -1,0 +1,5 @@
+gitops_repo_branch: "main"
+argocd_namespace: "argocd"
+infra_repo_url: "https://github.com/dmaksky/infra.git"
+infra_repo_rev: "HEAD"
+infra_workdir: "/home/{{ ansible_user }}/infra"

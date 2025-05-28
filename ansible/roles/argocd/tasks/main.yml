@@ -1,0 +1,134 @@
+- name: add helm repo
+  shell: |
+    helm repo list | grep -q '^argo-cd' \
+      || helm repo add argo-cd https://argoproj.github.io/argo-helm
+  changed_when: false
+  become: false
+
+- name: helm repo update
+  command: helm repo update
+  become: false
+
+- name: install / upgrade argocd
+  command: >
+    helm upgrade --install argocd argo-cd/argo-cd
+    --namespace {{ argocd_namespace }} --create-namespace --wait
+  register: argocd_result
+  become: false
+
+- name: check argocd cli
+  command: argocd version --client
+  register: argocd_cli_check
+  failed_when: false
+  changed_when: false
+  become: false
+
+- name: download argocd cli
+  get_url:
+    url: https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+    dest: /usr/local/bin/argocd
+    mode: "0755"
+  when: argocd_cli_check.rc != 0
+
+- name: start port-forward in background
+  shell: |
+    nohup kubectl port-forward svc/argocd-server -n {{ argocd_namespace }} 8080:443 \
+      >/tmp/argocd-portfwd.log 2>&1 &
+    echo $! > /tmp/argocd-portfwd.pid
+  async: 0
+  poll: 0
+  changed_when: false
+  become: false
+
+- name: wait for localhost:8080
+  wait_for:
+    host: 127.0.0.1
+    port: 8080
+    timeout: 30
+  become: false
+
+- name: get admin password (base64)
+  command: >
+    kubectl get secret argocd-initial-admin-secret
+    -n {{ argocd_namespace }}
+    -o jsonpath="{.data.password}"
+  register: admin_pw_b64
+  changed_when: false
+  become: false
+
+- name: decode admin password
+  set_fact:
+    argocd_admin_password: "{{ admin_pw_b64.stdout | b64decode }}"
+
+- name: show login info
+  debug:
+    msg: |
+      ================================================================
+      ArgoCD доступен по адресу: https://localhost:8080
+      Логин  : admin
+      Пароль : {{ argocd_admin_password }}
+      CLI    : argocd login localhost:8080 --username admin \
+               --password '{{ argocd_admin_password }}' --insecure
+      (PID порт-форварда: `cat /tmp/argocd-portfwd.pid`)
+      ================================================================
+  become: false
+
+- name: ensure namespace external-dns
+  command: kubectl create namespace external-dns
+  register: ns_result
+  failed_when: ns_result.rc not in [0, 1]
+  changed_when: ns_result.rc == 0
+  become: false
+
+- name: ensure namespace cert-manager
+  command: kubectl create namespace cert-manager
+  register: ns_result
+  failed_when: ns_result.rc not in [0, 1]
+  changed_when: ns_result.rc == 0
+  become: false
+
+- name: ensure namespace cloudnativepg
+  command: kubectl create namespace cloudnativepg
+  register: ns_result
+  failed_when: ns_result.rc not in [0, 1]
+  changed_when: ns_result.rc == 0
+  become: false
+
+- name: apply yc-auth secret from local SA key for external-dns
+  shell: |
+    kubectl -n external-dns create secret generic yc-auth \
+      --from-file=sa.json=$HOME/.yandex-cloud/k8s-key.json \
+      --dry-run=client -o yaml | kubectl apply -f -
+  no_log: true
+  become: false
+
+- name: apply yc-auth secret from local SA key for cert-manager
+  shell: |
+    kubectl -n cert-manager create secret generic yc-auth \
+      --from-file=sa.json=$HOME/.yandex-cloud/k8s-key.json \
+      --dry-run=client -o yaml | kubectl apply -f -
+  no_log: true
+  become: false
+
+
+- name: apply pg-backup-s3-creds secret for CloudNativePG
+  shell: |
+    kubectl -n cloudnativepg create secret generic pg-backup-s3-creds \
+      --from-literal=ACCESS_KEY_ID={{ pg_access_key | quote }} \
+      --from-literal=SECRET_ACCESS_KEY={{ pg_secret_key | quote }} \
+      --dry-run=client -o yaml | kubectl apply -f -
+  no_log: true
+  become: false
+
+- name: clone infra repo
+  git:
+    repo:  "{{ infra_repo_url }}"
+    dest:  "{{ infra_workdir }}"
+    version: "{{ infra_repo_rev }}"
+    depth: 1
+    force: yes
+  become: false
+
+- name: apply ApplicationSet
+  command: kubectl apply -f {{ infra_workdir }}/apps.yml
+  become: false

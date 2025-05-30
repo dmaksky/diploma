@@ -1,0 +1,13 @@
+- name: Настройка management-хоста и развёртывание ArgoCD
+  hosts: management
+  become: true
+  gather_facts: false
+  roles:
+    - role: yandex_cli
+      tags: yandex_cli
+    - role: kubectl
+      tags: kubectl
+    - role: helm
+      tags: helm
+    - role: argocd
+      tags: argocd
